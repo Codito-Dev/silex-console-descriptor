@@ -1,0 +1,30 @@
+{
+    "name": "codito/silex-console-descriptor",
+    "type": "library",
+    "description": "Descriptor helper for Silex-based CLI applications",
+    "keywords": [ "silex", "console" ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Grzegorz Korba",
+            "email": "grzegorz.korba@codito.net",
+            "homepage": "http://codito.net"
+        }
+    ],
+    "support": {
+        "email": "support@codito.net"
+    },
+    "minimum-stability": "stable",
+    "require": {
+        "php": ">=5.4"
+    },
+    "require-dev": {
+        "symfony/console": "^2.7",
+        "symfony/routing": "^2.7"
+    },
+    "autoload": {
+        "psr-4": {
+            "Codito\\Silex\\Console\\": "src"
+        }
+    }
+}
