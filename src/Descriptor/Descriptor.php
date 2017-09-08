@@ -5,6 +5,7 @@ namespace Codito\Silex\Console\Descriptor;
 use Symfony\Component\Console\Descriptor\DescriptorInterface;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouteCollection;
 
@@ -35,6 +36,12 @@ abstract class Descriptor implements DescriptorInterface
                 break;
             case $object instanceof Route:
                 $this->describeRoute($object, $options);
+                break;
+            case $object instanceof EventDispatcherInterface:
+                $this->describeEventDispatcherListeners($object, $options);
+                break;
+            case is_callable($object):
+                $this->describeCallable($object, $options);
                 break;
             default:
                 throw new \InvalidArgumentException(sprintf('Object of type "%s" is not describable.', get_class($object)));
@@ -94,6 +101,25 @@ abstract class Descriptor implements DescriptorInterface
      * @param array $options
      */
     abstract protected function describeRoute(Route $route, array $options = array());
+
+    /**
+     * Describes event dispatcher listeners.
+     *
+     * Common options are:
+     * * name: name of listened event
+     *
+     * @param EventDispatcherInterface $eventDispatcher
+     * @param array                    $options
+     */
+    abstract protected function describeEventDispatcherListeners(EventDispatcherInterface $eventDispatcher, array $options = array());
+
+    /**
+     * Describes a callable.
+     *
+     * @param callable $callable
+     * @param array    $options
+     */
+    abstract protected function describeCallable($callable, array $options = array());
 
     /**
      * Formats a value as string.
