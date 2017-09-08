@@ -3,6 +3,8 @@
 namespace Codito\Silex\Console\Descriptor;
 
 use Symfony\Component\Console\Helper\Table;
+use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouteCollection;
 
@@ -88,6 +90,57 @@ class TextDescriptor extends Descriptor
     }
 
     /**
+     * {@inheritdoc}
+     */
+    protected function describeEventDispatcherListeners(EventDispatcherInterface $eventDispatcher, array $options = array())
+    {
+        $event = array_key_exists('event', $options) ? $options['event'] : null;
+
+        if (null !== $event) {
+            $title = sprintf('Registered Listeners for "%s" Event', $event);
+        } else {
+            $title = 'Registered Listeners Grouped by Event';
+        }
+
+        $options['output']->title($title);
+
+        $registeredListeners = $eventDispatcher->getListeners($event);
+        if (null !== $event) {
+            $this->renderEventListenerTable($eventDispatcher, $event, $registeredListeners, $options['output']);
+        } else {
+            ksort($registeredListeners);
+            foreach ($registeredListeners as $eventListened => $eventListeners) {
+                $options['output']->section(sprintf('"%s" event', $eventListened));
+                $this->renderEventListenerTable($eventDispatcher, $eventListened, $eventListeners, $options['output']);
+            }
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function describeCallable($callable, array $options = array())
+    {
+        $this->writeText($this->formatCallable($callable), $options);
+    }
+
+    /**
+     * @param array $array
+     */
+    private function renderEventListenerTable(EventDispatcherInterface $eventDispatcher, $event, array $eventListeners, SymfonyStyle $io)
+    {
+        $tableHeaders = array('Order', 'Callable', 'Priority');
+        $tableRows = array();
+
+        $order = 1;
+        foreach ($eventListeners as $order => $listener) {
+            $tableRows[] = array(sprintf('#%d', $order + 1), $this->formatCallable($listener), $eventDispatcher->getListenerPriority($event, $listener));
+        }
+
+        $io->table($tableHeaders, $tableRows);
+    }
+
+    /**
      * @param array $config
      *
      * @return string
@@ -109,14 +162,33 @@ class TextDescriptor extends Descriptor
     }
 
     /**
-     * @param string $section
-     * @param string $message
+     * @param callable $callable
      *
      * @return string
      */
-    private function formatSection($section, $message)
+    private function formatCallable($callable)
     {
-        return sprintf('<info>[%s]</info> %s', $section, $message);
+        if (is_array($callable)) {
+            if (is_object($callable[0])) {
+                return sprintf('%s::%s()', get_class($callable[0]), $callable[1]);
+            }
+
+            return sprintf('%s::%s()', $callable[0], $callable[1]);
+        }
+
+        if (is_string($callable)) {
+            return sprintf('%s()', $callable);
+        }
+
+        if ($callable instanceof \Closure) {
+            return '\Closure()';
+        }
+
+        if (method_exists($callable, '__invoke')) {
+            return sprintf('%s::__invoke()', get_class($callable));
+        }
+
+        throw new \InvalidArgumentException('Callable is not describable.');
     }
 
     /**
